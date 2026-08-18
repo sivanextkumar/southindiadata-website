@@ -980,38 +980,41 @@
       </div>
     </div>
     <div class="contact-form reveal">
-      <div class="form-row">
-        <div class="form-group">
-          <label>First name</label>
-          <input type="text" placeholder="Arjun"/>
+      <form id="contactForm">
+        <input type="hidden" name="_subject" value="New project enquiry via SouthIndiaData.com"/>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fname">First name</label>
+            <input id="fname" type="text" name="first_name" placeholder="Arjun" required/>
+          </div>
+          <div class="form-group">
+            <label for="lname">Last name</label>
+            <input id="lname" type="text" name="last_name" placeholder="Kumar" required/>
+          </div>
         </div>
         <div class="form-group">
-          <label>Last name</label>
-          <input type="text" placeholder="Kumar"/>
+          <label for="email">Work email</label>
+          <input id="email" type="email" name="email" placeholder="arjun@company.com" required/>
         </div>
-      </div>
-      <div class="form-group">
-        <label>Work email</label>
-        <input type="email" placeholder="arjun@company.com"/>
-      </div>
-      <div class="form-group">
-        <label>What are you looking for?</label>
-        <select>
-          <option value="" disabled selected>Select a service</option>
-          <option>Azure Lakehouse Architecture</option>
-          <option>Microsoft Fabric Engineering</option>
-          <option>Real-Time Pipelines</option>
-          <option>ADF / Data Factory</option>
-          <option>Power BI & Semantic Layer</option>
-          <option>DataOps & Governance</option>
-          <option>Something else</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Tell me about your project</label>
-        <textarea placeholder="e.g. We have 5 SQL Server databases on-prem and want to migrate to Azure. Current volume is about 2TB..."></textarea>
-      </div>
-      <button class="btn-submit">Send Message →</button>
+        <div class="form-group">
+          <label for="service">What are you looking for?</label>
+          <select id="service" name="service" required>
+            <option value="" disabled selected>Select a service</option>
+            <option>Azure Lakehouse Architecture</option>
+            <option>Microsoft Fabric Engineering</option>
+            <option>Real-Time Pipelines</option>
+            <option>ADF / Data Factory</option>
+            <option>Power BI &amp; Semantic Layer</option>
+            <option>DataOps &amp; Governance</option>
+            <option>Something else</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="message">Tell me about your project</label>
+          <textarea id="message" name="message" placeholder="e.g. We have 5 SQL Server databases on-prem and want to migrate to Azure. Current volume is about 2TB..." required></textarea>
+        </div>
+        <button type="submit" class="btn-submit" id="submitBtn">Send Message &#8594;</button>
+      </form>
     </div>
   </div>
 </section>
@@ -1177,17 +1180,68 @@ window.addEventListener('resize', () => { cancelAnimationFrame(raf); resize(); f
 resize();
 frame();
 
-// ── FORM SUBMIT STUB ──────────────────────────────────────────
-document.querySelector('.btn-submit').addEventListener('click', () => {
-  const btn = document.querySelector('.btn-submit');
-  btn.textContent = "\u2713 Message sent \u2014 I'll be in touch!";
-  btn.style.background = '#00D4C8';
-  btn.style.color = '#0A1628';
-  setTimeout(() => {
-    btn.textContent = 'Send Message →';
-    btn.style.background = '';
-    btn.style.color = '';
-  }, 4000);
+// ── FORMSPREE CONTACT FORM ────────────────────────────────────
+// Submissions are posted to Formspree and forwarded to sivanextkumar@gmail.com
+// One-time setup: go to https://formspree.io, sign up with sivanextkumar@gmail.com,
+// create a form, and replace YOUR_FORM_ID below with the ID from your dashboard (e.g. xpzgkdnb).
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/YOUR_FORM_ID';
+
+document.getElementById('contactForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn  = document.getElementById('submitBtn');
+  const form = e.target;
+
+  // Basic validation
+  const email = form.email.value.trim();
+  if (!email) { alert('Please enter your email address.'); return; }
+
+  // Loading state
+  btn.textContent = 'Sending\u2026';
+  btn.disabled    = true;
+  btn.style.opacity = '0.75';
+
+  try {
+    const data = new FormData(form);
+    // Tag the destination so Formspree routes correctly
+    data.append('_replyto', email);
+
+    const res = await fetch(FORMSPREE_ENDPOINT, {
+      method:  'POST',
+      body:    data,
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (res.ok) {
+      // Success state
+      btn.textContent      = '\u2713 Sent! I\'ll reply within 24 hrs.';
+      btn.style.background = '#00D4C8';
+      btn.style.color      = '#0A1628';
+      btn.style.opacity    = '1';
+      form.reset();
+      setTimeout(() => {
+        btn.textContent      = 'Send Message \u2192';
+        btn.style.background = '';
+        btn.style.color      = '';
+        btn.disabled         = false;
+      }, 5000);
+    } else {
+      const json = await res.json();
+      const msg  = (json.errors || []).map(x => x.message).join(', ') || 'Submission failed.';
+      throw new Error(msg);
+    }
+  } catch (err) {
+    btn.textContent   = '\u26a0 Error \u2014 please email directly';
+    btn.style.background = '#e53e3e';
+    btn.style.color      = '#fff';
+    btn.style.opacity    = '1';
+    btn.disabled         = false;
+    console.error('Form error:', err);
+    setTimeout(() => {
+      btn.textContent      = 'Send Message \u2192';
+      btn.style.background = '';
+      btn.style.color      = '';
+    }, 5000);
+  }
 });
 </script>
 </body>
